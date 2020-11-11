@@ -232,8 +232,11 @@ public class BasicSupport extends AbstractLibertySupport {
                     }
                 }
                 
-                Artifact artifact = getArtifact(assemblyArtifact);                
-                
+                Artifact artifact = getArtifact(assemblyArtifact);
+                if (artifact == null) {
+                    return;
+                }
+
                 assemblyArchive = artifact.getFile();
                 if (assemblyArchive == null) {
                     throw new MojoExecutionException(MessageFormat.format(messages.getString("error.server.assembly.validate"), "artifact based assembly archive", ""));

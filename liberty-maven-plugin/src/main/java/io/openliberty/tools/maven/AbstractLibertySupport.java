@@ -88,6 +88,11 @@ public abstract class AbstractLibertySupport extends MojoSupport {
     @Parameter(property = "reactorProjects", required = true, readonly = true)
     protected List<MavenProject> reactorProjects;
     
+    /**
+     * Used for version checking, if true skip downloading artifact
+     */
+    protected boolean skipDownload = false;
+
     protected MavenProject getProject() {
         return project;
     }
@@ -404,8 +409,15 @@ public abstract class AbstractLibertySupport extends MojoSupport {
         org.eclipse.aether.artifact.Artifact aetherArtifact = new org.eclipse.aether.artifact.DefaultArtifact(
                 item.getGroupId(), item.getArtifactId(), item.getType(), item.getVersion());
         
-        File artifactFile = resolveArtifactFile(aetherArtifact);
-        
+        File artifactFile = null;
+        if (this.skipDownload) {
+            artifactFile = resolveArtifactFileWithoutDownload(aetherArtifact);
+            if (artifactFile == null) {
+                return null;
+            }
+        } else {
+            artifactFile = resolveArtifactFile(aetherArtifact);
+        }
         Artifact artifact = new DefaultArtifact(item.getGroupId(), item.getArtifactId(), item.getVersion(),
                 Artifact.SCOPE_PROVIDED, item.getType(), null, new DefaultArtifactHandler("jar"));
         
@@ -425,7 +437,6 @@ public abstract class AbstractLibertySupport extends MojoSupport {
     private File resolveArtifactFile(org.eclipse.aether.artifact.Artifact aetherArtifact) throws MojoExecutionException {
         ArtifactRequest req = new ArtifactRequest().setRepositories(this.repositories).setArtifact(aetherArtifact);
         ArtifactResult resolutionResult = null;
-        
         try {
             resolutionResult = this.repositorySystem.resolveArtifact(this.repoSession, req);
             if (!resolutionResult.isResolved()) {
@@ -438,7 +449,27 @@ public abstract class AbstractLibertySupport extends MojoSupport {
         }
         
         File artifactFile = resolutionResult.getArtifact().getFile();
-        
+        return artifactFile;
+    }
+
+    // resolve the artifact file without downlodaing from remote repositories if it does not exist
+    private File resolveArtifactFileWithoutDownload(org.eclipse.aether.artifact.Artifact aetherArtifact) throws MojoExecutionException {
+        // set repositories to null so that it will not download the artifact if it does not exist
+        ArtifactRequest req = new ArtifactRequest().setRepositories(null).setArtifact(aetherArtifact);
+        ArtifactResult resolutionResult = null;
+        try {
+            resolutionResult = this.repositorySystem.resolveArtifact(this.repoSession, req);
+            if (!resolutionResult.isResolved()) {
+                log.debug("***Unable to resolve artifact: " + aetherArtifact.getGroupId() + ":"
+                + aetherArtifact.getArtifactId() + ":" + aetherArtifact.getVersion());
+                return null;
+            }
+        } catch (ArtifactResolutionException e) {
+            log.debug("***Unable to resolve artifact: " + aetherArtifact.getGroupId() + ":"
+                + aetherArtifact.getArtifactId() + ":" + aetherArtifact.getVersion());
+            return null;
+        }
+        File artifactFile = resolutionResult.getArtifact().getFile();
         return artifactFile;
     }
     

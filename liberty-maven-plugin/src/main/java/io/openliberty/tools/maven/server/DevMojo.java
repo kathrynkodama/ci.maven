@@ -62,11 +62,13 @@ import org.twdata.maven.mojoexecutor.MojoExecutor.Element;
 
 import io.openliberty.tools.ant.ServerTask;
 import io.openliberty.tools.common.plugins.util.DevUtil;
+import io.openliberty.tools.common.plugins.util.InstallFeatureUtil;
 import io.openliberty.tools.common.plugins.util.JavaCompilerOptions;
 import io.openliberty.tools.common.plugins.util.PluginExecutionException;
 import io.openliberty.tools.common.plugins.util.PluginScenarioException;
 import io.openliberty.tools.common.plugins.util.ServerFeatureUtil;
 import io.openliberty.tools.common.plugins.util.ServerStatusUtil;
+import io.openliberty.tools.common.plugins.util.InstallFeatureUtil.ProductProperties;
 import io.openliberty.tools.maven.utils.ExecuteMojoUtil;
 import io.openliberty.tools.maven.applications.DeployMojoSupport;
 import io.openliberty.tools.maven.BasicSupport;
@@ -340,6 +342,7 @@ public class DevMojo extends StartDebugMojoSupport {
                 return;
             }
             try {
+                super.logDevStop();
                 ServerTask serverTask = initializeJava();
                 serverTask.setOperation("stop");
                 serverTask.execute();
@@ -561,6 +564,7 @@ public class DevMojo extends StartDebugMojoSupport {
                     // - deploy app
                     // - start server
                     util.restartServer();
+
                     return true;
                 } else {
                     if (isUsingBoost() && (createServer || runBoostPackage)) {
@@ -769,7 +773,6 @@ public class DevMojo extends StartDebugMojoSupport {
         }
 
         JavaCompilerOptions compilerOptions = getMavenCompilerOptions();
-
         util = new DevMojoUtil(installDirectory, userDirectory, serverDirectory, sourceDirectory, testSourceDirectory,
                 configDirectory, project.getBasedir(), resourceDirs, compilerOptions, settings.getLocalRepository());
         util.addShutdownHook(executor);
